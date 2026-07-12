@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Grounding Setup Manager</title>
+<style>
+/* SAP Fiori Horizon design tokens (aligned to sap.com/design-system v1.145) */
+:root {
+  /* Brand – exact Fiori Horizon blue */
+  --sapBrand:                  #0070f2;
+  --sapBrand_Hover:            #0064d9;
+  --sapBrand_Active:           #0057bf;
+  --sapHighlight:              #0070f2;
+
+  /* Semantic */
+  --sapSuccess:                #188918;
+  --sapSuccessLight:           #f5faf5;
+  --sapSuccessBorder:          #b5d5b5;
+  --sapError:                  #bb0000;
+  --sapErrorLight:             #fff5f5;
+  --sapErrorBorder:            #f5c0c0;
+  --sapWarning:                #e76500;
+  --sapWarningLight:           #fef7f1;
+  --sapWarningBorder:          #f5d0a0;
+  --sapInformation:            #0070f2;
+  --sapInformationLight:       #eef4fd;
+  --sapInformationBorder:      #c0d8f8;
+
+  /* Shell */
+  --sapShellBg:                #1d2d3e;
+  --sapShellText:              #ffffff;
+
+  /* Page background – very light, almost white */
+  --sapBackgroundColor:        #f5f6f7;
+
+  /* Base (card/surface) */
+  --sapBaseColor:              #ffffff;
+
+  /* Text */
+  --sapTextColor:              #32363a;
+  --sapContent_LabelColor:     #6a7585;
+  --sapContent_DisabledColor:  #a9b4be;
+  --sapContent_PlaceholderColor: #a9b4be;
+  --sapLink_Color:             #0070f2;
+
+  /* Field */
+  --sapField_Background:       #ffffff;
+  --sapField_BorderColor:      #96a8b9;
+  --sapField_Focus_OutlineColor: #0070f2;
+
+  /* Button / Input */
+  --sapButton_BorderWidth:          1px;
+  --sapButton_BorderCornerRadius:   0.5rem;   /* buttons */
+  --sapInput_BorderCornerRadius:    0.375rem; /* inputs & selects */
+  --sapCard_BorderCornerRadius:     0.75rem;  /* cards, panels, wizard */
+
+  /* List / Group */
+  --sapGroup_ContentBackground: #ffffff;
+  --sapGroup_ContentBorderColor: #d1d5da;
+  --sapList_BorderColor:       #e8ebed;   /* very light – matches design system cards */
+  --sapList_HeaderBorderColor: #d1d5da;
+  --sapList_GroupHeaderBg:     #f7f8f9;
+
+  /* Shadows – flat/minimal as in the design system screenshot */
+  --sapContent_Shadow0: 0 0 0.125rem rgba(0,0,0,0.08), 0 0.0625rem 0.25rem rgba(0,0,0,0.06);
+  --sapContent_Shadow1: 0 0.0625rem 0.5rem rgba(0,0,0,0.10);
+
+  /* Font */
+  --sapFontFamily:        '72', '72full', '72ext', Arial, Helvetica, sans-serif;
+  --sapFontSize:          0.875rem;
+  --sapFontSmallSize:     0.75rem;
+  --sapFontLargeSize:     1rem;
+
+  /* Spacing */
+  --sapContent_GridGutter: 1rem;
+
+  --mono: 'Cascadia Code', 'Fira Mono', Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  background: var(--sapBackgroundColor);
+  color: var(--sapTextColor);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shell Bar */
+.fd-shell-bar {
+  background: var(--sapShellBg);
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.24);
+}
+.fd-shell-bar__logo {
+  display: flex; align-items: center; gap: 0.5rem;
+  flex-shrink: 0;
+}
+.fd-shell-bar__title {
+  color: var(--sapShellText);
+  font-size: 1rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.fd-shell-bar__subtitle {
+  margin-left: auto;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.fd-shell-bar__separator {
+  width: 1px; height: 1.5rem;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+/* Page Layout */
+.fd-page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+/* Page Header */
+.fd-page-header {
+  margin-bottom: 1rem;
+}
+.fd-page-header__breadcrumb {
+  font-size: 0.75rem;
+  color: var(--sapContent_LabelColor);
+  margin-bottom: 0.25rem;
+  display: flex; align-items: center; gap: 0.25rem;
+}
+.fd-page-header__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--sapTextColor);
+}
+
+/* Wizard Progress Bar */
+.fd-wizard-progress {
+  display: flex;
+  align-items: stretch;
+  background: var(--sapBaseColor);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapCard_BorderCornerRadius);
+  margin-bottom: 1rem;
+  box-shadow: var(--sapContent_Shadow0);
+  overflow: hidden;
+}
+.fd-wizard-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-right: 1px solid var(--sapList_BorderColor);
+  position: relative;
+  transition: background 0.12s;
+}
+.fd-wizard-step:last-child { border-right: none; }
+.fd-wizard-step--current { background: var(--sapInformationLight); }
+.fd-wizard-step--completed { background: var(--sapBaseColor); }
+.fd-wizard-step--locked   { background: var(--sapBaseColor); opacity: 0.55; }
+
+.fd-wizard-step__indicator {
+  width: 1.75rem; height: 1.75rem;
+  border-radius: 50%;
+  background: var(--sapContent_DisabledColor);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fd-wizard-step--current   .fd-wizard-step__indicator { background: var(--sapBrand); }
+.fd-wizard-step--completed .fd-wizard-step__indicator { background: var(--sapSuccess); }
+
+.fd-wizard-step__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sapTextColor);
+  line-height: 1.2;
+}
+.fd-wizard-step__sublabel {
+  font-size: 0.6875rem;
+  color: var(--sapContent_LabelColor);
+  margin-top: 0.125rem;
+}
+
+/* Panel / Card */
+.fd-panel {
+  background: var(--sapBaseColor);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapCard_BorderCornerRadius);
+  box-shadow: var(--sapContent_Shadow0);
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.fd-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 1rem;
+  min-height: 3rem;
+  border-bottom: 1px solid var(--sapList_BorderColor);
+  background: var(--sapBaseColor);
+}
+.fd-panel__header--clickable { cursor: pointer; user-select: none; }
+.fd-panel__header--clickable:hover { background: var(--sapList_GroupHeaderBg); }
+
+.fd-panel__step-badge {
+  width: 1.5rem; height: 1.5rem;
+  border-radius: 50%;
+  background: var(--sapBrand);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fd-panel__step-badge--inactive { background: var(--sapContent_DisabledColor); }
+
+.fd-panel__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--sapTextColor);
+  flex: 1;
+}
+.fd-panel__subtitle {
+  font-size: 0.75rem;
+  color: var(--sapContent_LabelColor);
+  margin-top: 0.125rem;
+}
+.fd-panel__chevron {
+  color: var(--sapContent_LabelColor);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.fd-panel__body { padding: 1rem; }
+
+/* Section Title */
+.fd-section-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sapContent_LabelColor);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+/* Form */
+.fd-form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.fd-form-grid .fd-full { grid-column: 1 / -1; }
+.fd-form-item   { display: flex; flex-direction: column; gap: 0.25rem; }
+
+.fd-form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sapContent_LabelColor);
+  display: flex; align-items: center; gap: 0.25rem;
+}
+.fd-required { color: var(--sapError); font-weight: 700; }
+.fd-form-hint { font-size: 0.6875rem; color: var(--sapContent_LabelColor); }
+
+.fd-input, .fd-select, .fd-textarea {
+  height: 2.25rem;
+  border: 1px solid var(--sapField_BorderColor);
+  border-radius: var(--sapInput_BorderCornerRadius);
+  padding: 0 0.625rem;
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  color: var(--sapTextColor);
+  background: var(--sapField_Background);
+  transition: border-color 0.1s;
+  width: 100%;
+}
+.fd-input:focus, .fd-select:focus, .fd-textarea:focus {
+  outline: none;
+  border-color: var(--sapField_Focus_OutlineColor);
+  box-shadow: 0 0 0 2px rgba(0,100,217,0.15);
+}
+.fd-input::placeholder { color: var(--sapContent_PlaceholderColor); font-size: 0.8125rem; }
+.fd-input--mono { font-family: var(--mono); font-size: 0.75rem; }
+.fd-select { cursor: pointer; }
+.fd-textarea {
+  height: auto;
+  min-height: 5rem;
+  padding: 0.5rem 0.625rem;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.fd-value-state {
+  min-height: 2.25rem;
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  padding: 0.375rem 0.625rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--sapList_GroupHeaderBg);
+  word-break: break-all;
+  line-height: 1.4;
+  color: var(--sapTextColor);
+}
+.fd-value-state--positive {
+  background: var(--sapSuccessLight);
+  border-color: var(--sapSuccessBorder);
+  color: var(--sapSuccess);
+}
+
+/* Buttons (SAP Fiori Horizon – aligned to design-system v1.145) */
+.fd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  border: 1px solid #96a8b9;          /* SAP standard button border */
+  border-radius: var(--sapButton_BorderCornerRadius);
+  background: var(--sapBaseColor);
+  color: var(--sapTextColor);
+  font-family: var(--sapFontFamily);
+  font-size: var(--sapFontSize);
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+  user-select: none;
+}
+.fd-button:hover  {
+  background: #f5f6f7;
+  border-color: #7a8fa0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.13), 0 1px 3px rgba(0,0,0,0.08);
+}
+.fd-button:active {
+  background: #eaecee;
+  border-color: #7a8fa0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.fd-button:focus-visible {
+  outline: 2px solid var(--sapBrand);
+  outline-offset: 2px;
+}
+.fd-button:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* Emphasized – solid brand blue */
+.fd-button--emphasized {
+  background: var(--sapBrand);
+  color: #ffffff;
+  border-color: var(--sapBrand);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 6px rgba(0,112,242,0.35), 0 1px 3px rgba(0,112,242,0.20);
+}
+.fd-button--emphasized:hover  {
+  background: var(--sapBrand_Hover);
+  border-color: var(--sapBrand_Hover);
+  box-shadow: 0 4px 12px rgba(0,112,242,0.40), 0 2px 4px rgba(0,112,242,0.25);
+}
+.fd-button--emphasized:active {
+  background: var(--sapBrand_Active);
+  border-color: var(--sapBrand_Active);
+  box-shadow: 0 1px 3px rgba(0,112,242,0.25);
+}
+
+/* Negative – destructive action */
+.fd-button--negative {
+  background: var(--sapBaseColor);
+  color: var(--sapError);
+  border-color: var(--sapError);
+}
+.fd-button--negative:hover  { background: var(--sapErrorLight); border-color: #990000; }
+.fd-button--negative:active { background: #ffe0e0; }
+
+/* Ghost – text link style, no border in rest state */
+.fd-button--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--sapBrand);
+  font-weight: 400;
+}
+.fd-button--ghost:hover  { background: var(--sapInformationLight); border-color: transparent; }
+.fd-button--ghost:active { background: #daeafd; border-color: transparent; }
+
+/* Compact – smaller variant (toolbar actions, table rows) */
+.fd-button--compact {
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.8125rem;
+}
+
+.fd-toolbar {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+/* Object Attribute (read-only field display) */
+.fd-attr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.fd-attr-grid .fd-full { grid-column: 1 / -1; }
+.fd-attr { display: flex; flex-direction: column; gap: 0.25rem; }
+.fd-attr__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sapContent_LabelColor);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fd-attr__value {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--sapTextColor);
+  word-break: break-all;
+  padding: 0.375rem 0.5rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  min-height: 1.875rem;
+  line-height: 1.4;
+}
+.fd-attr__value--positive {
+  background: var(--sapSuccessLight);
+  border-color: var(--sapSuccessBorder);
+  color: var(--sapSuccess);
+  font-weight: 600;
+}
+
+/* Message Strip */
+.fd-message-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--sapButton_BorderCornerRadius);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin-top: 0.625rem;
+  border: 1px solid;
+}
+.fd-message-strip--success  { background: var(--sapSuccessLight);     border-color: var(--sapSuccessBorder);     color: #1a4d1a; }
+.fd-message-strip--error    { background: var(--sapErrorLight);       border-color: var(--sapErrorBorder);       color: #5c0000; white-space: pre-wrap; font-family: var(--mono); font-size: 0.75rem; }
+.fd-message-strip--warning  { background: var(--sapWarningLight);     border-color: var(--sapWarningBorder);     color: #7a3a00; }
+.fd-message-strip--information { background: var(--sapInformationLight); border-color: var(--sapInformationBorder); color: #003d85; }
+.fd-message-strip__icon { flex-shrink: 0; margin-top: 1px; }
+
+/* Status Bar */
+.fd-status-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+}
+.fd-status-item {
+  display: flex; align-items: center; gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--sapContent_DisabledColor);
+}
+.fd-status-item--positive { color: var(--sapSuccess); font-weight: 600; }
+.fd-status-item--negative { color: var(--sapError);   font-weight: 600; }
+.fd-status-item--info     { color: var(--sapInformation); }
+.fd-status-sep { width: 1px; height: 1rem; background: var(--sapList_BorderColor); flex-shrink: 0; }
+.fd-status-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+
+@keyframes fd-spin { to { transform: rotate(360deg); } }
+.fd-busy-indicator {
+  display: inline-block;
+  width: 0.875rem; height: 0.875rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: fd-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Upload Set (FileUpload area) */
+.fd-upload-area {
+  border: 2px dashed var(--sapField_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  padding: 1.75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.fd-upload-area:hover,
+.fd-upload-area--drag { border-color: var(--sapBrand); background: var(--sapInformationLight); }
+.fd-upload-area--done {
+  border-style: solid;
+  border-color: var(--sapSuccess);
+  background: var(--sapSuccessLight);
+}
+.fd-upload-area__icon { color: var(--sapContent_LabelColor); margin-bottom: 0.5rem; }
+.fd-upload-area--done .fd-upload-area__icon { color: var(--sapSuccess); }
+.fd-upload-area__text { font-size: 0.875rem; color: var(--sapContent_LabelColor); }
+.fd-upload-area__text strong { color: var(--sapBrand); }
+.fd-upload-area--done .fd-upload-area__text { color: var(--sapSuccess); font-weight: 600; }
+.fd-upload-area__hint { font-size: 0.6875rem; color: var(--sapContent_PlaceholderColor); margin-top: 0.25rem; }
+
+/* Upload Grid */
+.fd-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.fd-upload-card-label {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--sapContent_LabelColor);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+.fd-upload-card-desc { font-size: 0.75rem; color: var(--sapContent_LabelColor); margin-bottom: 0.5rem; }
+
+/* Tag */
+.fd-tag {
+  display: inline-flex; align-items: center;
+  height: 1.25rem; padding: 0 0.5rem;
+  border-radius: 99px; border: 1px solid;
+  font-size: 0.6875rem; font-weight: 600;
+}
+.fd-tag--neutral { background: #f5f5f5; border-color: #c5c5c5; color: #555; }
+
+/* Code block (dark) */
+.fd-code {
+  background: #0d1b2a;
+  border-radius: var(--sapButton_BorderCornerRadius);
+  padding: 0.75rem 0.875rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #7fc4fd;
+  word-break: break-all;
+  line-height: 1.6;
+}
+.fd-code--response {
+  color: #e8ecf0;
+  white-space: pre-wrap;
+  max-height: 20rem;
+  overflow-y: auto;
+  margin-top: 0.625rem;
+}
+.fd-code--response.fd-code--error { color: #ff8a80; }
+.fd-code--muted { background: var(--sapList_GroupHeaderBg); color: var(--sapContent_LabelColor); font-size: 0.6875rem; white-space: pre-wrap; word-break: break-all; }
+
+/* Pipeline row */
+.fd-pipeline-row {
+  display: flex; gap: 0.5rem; align-items: center;
+  padding: 0.75rem 0.875rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  margin-bottom: 1rem;
+}
+.fd-pipeline-row .fd-select { flex: 1; }
+
+/* Zeitplan (Cron) Bar */
+.fd-schedule-bar {
+  display: flex; gap: 0.625rem; align-items: center;
+  padding: 0.625rem 0.875rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  margin-bottom: 1rem;
+}
+.fd-schedule-bar__text  { flex: 1; min-width: 0; }
+.fd-schedule-bar__label { font-size: 0.6875rem; color: var(--sapContent_LabelColor); }
+.fd-schedule-bar__value { font-size: 0.8125rem; font-weight: 600; }
+.fd-schedule-bar__expr  {
+  display: inline-block; margin-top: 0.125rem;
+  font-family: var(--mono); font-size: 0.6875rem;
+  color: var(--sapContent_LabelColor);
+}
+
+/* Inline create form */
+.fd-create-form {
+  display: none;
+  background: var(--sapInformationLight);
+  border: 1px solid var(--sapInformationBorder);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  padding: 0.875rem;
+  margin-bottom: 1rem;
+}
+.fd-create-form__title { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.75rem; }
+
+/* Op Groups */
+.fd-op-group        { margin-bottom: 0.875rem; }
+.fd-op-group__row   { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Divider */
+.fd-divider { border: none; border-top: 1px solid var(--sapList_BorderColor); margin: 1rem 0; }
+
+/* Token meta */
+.fd-token-meta { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.fd-token-meta__item { font-size: 0.75rem; }
+.fd-token-meta__item label { color: var(--sapContent_LabelColor); }
+.fd-token-meta__item span  { font-weight: 600; }
+
+/* Additional properties */
+.fd-props-display {
+  display: flex; gap: 1rem; align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  font-size: 0.8125rem;
+}
+.fd-props-display__key { color: var(--sapContent_LabelColor); }
+.fd-props-display__val { font-family: var(--mono); font-size: 0.75rem; }
+
+/* Info note box */
+.fd-info-note {
+  padding: 0.625rem 0.875rem;
+  background: var(--sapList_GroupHeaderBg);
+  border: 1px solid var(--sapList_BorderColor);
+  border-radius: var(--sapButton_BorderCornerRadius);
+  font-size: 0.8125rem;
+  color: var(--sapContent_LabelColor);
+  line-height: 1.7;
+}
+
+/* JSON output header */
+.fd-output-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+</style>
+</head>
+<body>
+
+<!-- Shell Bar -->
+<div class="fd-shell-bar">
+  <div class="fd-shell-bar__logo">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="1.8" aria-label="Document Grounding Setup Manager">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z"/>
+    </svg>
+  </div>
+  <div class="fd-shell-bar__separator"></div>
+  <div class="fd-shell-bar__title">Document Grounding Setup Manager</div>
+  <div class="fd-shell-bar__subtitle">Community-Tool für SAP Business Technology Platform</div>
+</div>
+
+<!-- Page -->
+<div class="fd-page">
+
+  <!-- Page Header -->
+  <div class="fd-page-header">
+    <div class="fd-page-header__breadcrumb">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+      Developer Tools
+      <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+      Document Grounding Setup Manager
+    </div>
+    <div class="fd-page-header__title">Document Grounding Setup Manager</div>
+  </div>
+
+  <!-- Wizard Progress Bar -->
+  <div class="fd-wizard-progress">
+    <div class="fd-wizard-step fd-wizard-step--current" id="wiz1">
+      <div class="fd-wizard-step__indicator" id="wizNum1">1</div>
+      <div>
+        <div class="fd-wizard-step__label">Verbindung einrichten</div>
+        <div class="fd-wizard-step__sublabel">Service Keys hochladen</div>
+      </div>
+    </div>
+    <div class="fd-wizard-step fd-wizard-step--locked" id="wiz2">
+      <div class="fd-wizard-step__indicator" id="wizNum2">2</div>
+      <div>
+        <div class="fd-wizard-step__label">BTP Destination</div>
+        <div class="fd-wizard-step__sublabel">Optional – SharePoint</div>
+      </div>
+    </div>
+    <div class="fd-wizard-step fd-wizard-step--locked" id="wiz3">
+      <div class="fd-wizard-step__indicator" id="wizNum3">3</div>
+      <div>
+        <div class="fd-wizard-step__label">Pipeline Operations</div>
+        <div class="fd-wizard-step__sublabel">Document Grounding</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- PANEL 1 – Verbindung einrichten -->
+  <div class="fd-panel">
+    <div class="fd-panel__header">
+      <div class="fd-panel__step-badge">1</div>
+      <div style="flex:1;">
+        <div class="fd-panel__title">Verbindung einrichten</div>
+        <div class="fd-panel__subtitle">Service Keys hochladen – Bearer Token wird automatisch erzeugt</div>
+      </div>
+    </div>
+    <div class="fd-panel__body">
+
+      <!-- Upload zones -->
+      <div class="fd-upload-grid">
+        <div>
+          <div class="fd-upload-card-label">Cloud Identity Service Key</div>
+          <div class="fd-upload-card-desc">Service Binding des <strong>Cloud Identity Service</strong><br><em>credential-type: X509_GENERATED</em></div>
+          <div class="fd-upload-area" id="dropZone"
+               onclick="document.getElementById('fileInput').click()"
+               ondragover="ev(event,'drag')" ondragleave="ev(event,'')" ondrop="onDrop(event)">
+            <div class="fd-upload-area__icon" id="uploadIcon1">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"/>
+              </svg>
+            </div>
+            <div class="fd-upload-area__text" id="uploadLabel1">Hierher ziehen oder <strong>klicken</strong></div>
+            <div class="fd-upload-area__hint" id="uploadHint1">.json Datei auswählen</div>
+          </div>
+          <input type="file" id="fileInput" accept=".json,application/json" onchange="loadFile(event)" style="display:none;">
+        </div>
+        <div>
+          <div class="fd-upload-card-label">Document Grounding Service Binding</div>
+          <div class="fd-upload-card-desc">Service Binding des <strong>Document Grounding Service</strong><br><em>enthält url / endpoints</em></div>
+          <div class="fd-upload-area" id="groundingDropZone"
+               onclick="document.getElementById('groundingFileInput').click()"
+               ondragover="evGrounding(event,'drag')" ondragleave="evGrounding(event,'')" ondrop="onDropGrounding(event)">
+            <div class="fd-upload-area__icon" id="uploadIcon2">
+              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+              </svg>
+            </div>
+            <div class="fd-upload-area__text" id="uploadLabel2">Hierher ziehen oder <strong>klicken</strong></div>
+            <div class="fd-upload-area__hint" id="uploadHint2">.json Datei auswählen</div>
+          </div>
+          <input type="file" id="groundingFileInput" accept=".json,application/json" onchange="loadGroundingFile(event)" style="display:none;">
+        </div>
+      </div>
+
+      <!-- Status Bar (shown after first upload) -->
+      <div id="setupStatusBar" style="display:none;">
+        <div class="fd-status-bar">
+          <div id="st-xsuaa" class="fd-status-item">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            Cloud Identity Key
+          </div>
+          <div class="fd-status-sep"></div>
+          <div id="st-ground" class="fd-status-item">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            Grounding Binding
+          </div>
+          <div class="fd-status-sep"></div>
+          <div id="st-token" class="fd-status-item">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            Bearer Token
+          </div>
+          <div class="fd-status-actions">
+            <button class="fd-button fd-button--compact" onclick="copyToken()" id="copyTokenBtn" style="display:none;">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Token kopieren
+            </button>
+            <button class="fd-button fd-button--compact" id="tokenBtn" onclick="getToken()" style="display:none;">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+              Erneuern
+            </button>
+          </div>
+        </div>
+        <div id="tokenError" style="display:none;"></div>
+      </div>
+
+      <!-- Technical Details (collapsed by default) -->
+      <div id="techDetailsWrapper" style="display:none;">
+        <hr class="fd-divider">
+        <button class="fd-button fd-button--ghost" style="padding:0 0.25rem;" onclick="toggleTechDetails()" id="techDetailsBtn">
+          <svg id="techChevron" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+          Technische Details einblenden
+        </button>
+        <div id="techDetails" style="display:none; margin-top:0.875rem;">
+
+          <div class="fd-section-title">Extrahierte Credentials</div>
+          <div class="fd-attr-grid" style="margin-bottom:1rem;">
+            <div class="fd-attr"><div class="fd-attr__label">Client ID</div><div class="fd-attr__value" id="f-clientid">—</div></div>
+            <div class="fd-attr"><div class="fd-attr__label">Credential Type</div><div class="fd-attr__value fd-attr__value--positive" id="f-credtype">—</div></div>
+            <div class="fd-attr fd-full"><div class="fd-attr__label">Token URL</div><div class="fd-attr__value" id="f-tokenurl">—</div></div>
+            <div class="fd-attr fd-full"><div class="fd-attr__label">Service URL</div><div class="fd-attr__value" id="f-serviceurl">—</div></div>
+            <div class="fd-attr"><div class="fd-attr__label">Zertifikat läuft ab</div><div class="fd-attr__value" id="f-certexp">—</div></div>
+            <div class="fd-attr"><div class="fd-attr__label">App Tenant ID</div><div class="fd-attr__value" id="f-apptid">—</div></div>
+            <div class="fd-attr fd-full"><div class="fd-attr__label">Grounding Base URL</div><div class="fd-attr__value" id="g-baseurl">—</div></div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.625rem; margin-bottom:0.875rem;">
+            <div class="fd-form-label" style="white-space:nowrap; flex-shrink:0;">Token URL (editierbar)</div>
+            <input id="f-tokenurl-edit" type="text" class="fd-input fd-input--mono" placeholder="wird aus Service Key befüllt…" style="flex:1;">
+            <button class="fd-button" onclick="getToken()">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+              Token neu laden
+            </button>
+          </div>
+
+          <div id="tokenResult" style="display:none;">
+            <div class="fd-section-title">Bearer Token (JWT)</div>
+            <div class="fd-code" id="tokenDisplay"
+                 style="max-height:4.5rem; overflow:hidden; cursor:pointer;"
+                 onclick="this.style.maxHeight=this.style.maxHeight?'':'4.5rem'"
+                 title="Klicken zum Auf-/Zuklappen"></div>
+            <div class="fd-token-meta">
+              <div class="fd-token-meta__item"><label>Typ: </label><span id="tokenType">—</span></div>
+              <div class="fd-token-meta__item"><label>Gültig: </label><span id="tokenExpiry">—</span></div>
+              <div class="fd-token-meta__item"><label>Abläuft: </label><span id="tokenAbläuft">—</span></div>
+            </div>
+          </div>
+
+          <div id="g-swagger" style="display:none; margin-top:0.75rem;">
+            <div class="fd-section-title">Swagger Docs</div>
+            <div id="g-swagger-links" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
+          </div>
+
+          <div id="curlPreview" class="fd-code fd-code--muted" style="display:none; margin-top:0.75rem;"></div>
+          <button class="fd-button fd-button--ghost fd-button--compact" onclick="toggleCurl()" id="curlBtn" style="display:none; margin-top:0.5rem;">curl anzeigen</button>
+
+        </div>
+      </div>
+
+      <!-- hidden divs for JS compat -->
+      <div id="parseStatus"     style="display:none;"></div>
+      <div id="groundingStatus" style="display:none;"></div>
+      <div id="groundingInfo"   style="display:none;"></div>
+      <div id="tokenStatus"     style="display:none;"></div>
+
+    </div>
+  </div>
+
+
+  <!-- PANEL 2 – BTP Destination [Optional, collapsed] -->
+  <div class="fd-panel">
+    <div class="fd-panel__header fd-panel__header--clickable" onclick="toggleDestStep()">
+      <div class="fd-panel__step-badge fd-panel__step-badge--inactive">2</div>
+      <div style="flex:1;">
+        <div class="fd-panel__title" style="display:flex; align-items:center; gap:0.5rem;">
+          BTP Destination erstellen
+          <span class="fd-tag fd-tag--neutral">Optional</span>
+        </div>
+        <div class="fd-panel__subtitle">SharePoint-Verbindung für Document Grounding als BTP Destination konfigurieren</div>
+      </div>
+      <svg id="destChevron" class="fd-panel__chevron" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="transform:rotate(90deg);">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/>
+      </svg>
+    </div>
+    <div class="fd-panel__body" id="destStepBody" style="display:none;">
+
+      <div class="fd-form-grid">
+        <div class="fd-form-item fd-full">
+          <label class="fd-form-label">Destination Name <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-name" type="text" placeholder="joule-doc-grounding-ms-sharepoint" value="joule-doc-grounding-ms-sharepoint" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item fd-full">
+          <label class="fd-form-label">Description <span style="font-weight:400;">(optional)</span></label>
+          <input class="fd-input" id="d-description" type="text" placeholder="z.B. SharePoint Access for Joule Document Grounding Service" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">SharePoint Domain <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-spdomain" type="text" placeholder="contoso.sharepoint.com" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">SharePoint Site ID <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-spsite" type="text" placeholder="MeineSite" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item fd-full">
+          <label class="fd-form-label">URL (generiert)</label>
+          <div class="fd-value-state" id="d-url-preview" style="color:var(--sapContent_PlaceholderColor);">— Domain &amp; Site ID eingeben —</div>
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">Tenant ID (Microsoft Entra ID) <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-tenantid" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">Token Service URL Variante</label>
+          <select class="fd-select" id="d-tokenvariant" onchange="updateDestPreview()">
+            <option value="microsoftonline">login.microsoftonline.com (empfohlen)</option>
+            <option value="microsoft">login.microsoft.com</option>
+          </select>
+        </div>
+        <div class="fd-form-item fd-full">
+          <label class="fd-form-label">Token Service URL (generiert)</label>
+          <div class="fd-value-state" id="d-tokenurl-preview" style="color:var(--sapContent_PlaceholderColor);">— Tenant ID eingeben —</div>
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">Client ID (Entra ID App) <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-clientid" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" oninput="updateDestPreview()">
+        </div>
+        <div class="fd-form-item">
+          <label class="fd-form-label">Client Secret (Entra ID App) <span class="fd-required">*</span></label>
+          <input class="fd-input" id="d-clientsecret" type="password" placeholder="••••••••" oninput="updateDestPreview()">
+          <div style="display:flex; align-items:center; gap:0.375rem; margin-top:0.25rem;">
+            <input type="checkbox" id="d-showcs" onchange="document.getElementById('d-clientsecret').type=this.checked?'text':'password'">
+            <label for="d-showcs" style="font-size:0.75rem; color:var(--sapContent_LabelColor); cursor:pointer;">Secret anzeigen</label>
+          </div>
+        </div>
+        <div class="fd-form-item fd-full">
+          <label class="fd-form-label">Additional Properties <span style="font-weight:400;">(fest vorgegeben)</span></label>
+          <div class="fd-props-display">
+            <span class="fd-props-display__key">scope</span>
+            <span class="fd-props-display__val">https://graph.microsoft.com/.default</span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="fd-divider">
+      <div class="fd-output-header">
+        <div class="fd-section-title" style="margin:0;">Generiertes JSON</div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="fd-button fd-button--compact" onclick="copyDestJson()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Kopieren
+          </button>
+          <button class="fd-button fd-button--compact fd-button--emphasized" onclick="downloadDestJson()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Herunterladen
+          </button>
+        </div>
+      </div>
+      <pre class="fd-code fd-code--response" id="destJsonPreview" style="color:#e8ecf0;"></pre>
+      <div id="destStatus"></div>
+      <div class="fd-info-note" style="margin-top:0.75rem;">
+        <strong>Import im BTP Cockpit:</strong> Subaccount → Connectivity → Destinations → <em>Import Destination</em> → heruntergeladene JSON-Datei auswählen → Client Secret manuell nachtragen.
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- PANEL 3 – Pipeline Operations -->
+  <div class="fd-panel" id="step4" style="opacity:0.4; pointer-events:none;">
+    <div class="fd-panel__header">
+      <div class="fd-panel__step-badge fd-panel__step-badge--inactive" id="num4">3</div>
+      <div>
+        <div class="fd-panel__title">Document Grounding – Pipeline Operations</div>
+        <div class="fd-panel__subtitle">Pipelines verwalten, triggern und überwachen</div>
+      </div>
+    </div>
+    <div class="fd-panel__body">
+
+      <!-- Pipeline Selector -->
+      <div class="fd-pipeline-row">
+        <div class="fd-section-title" style="margin:0; flex-shrink:0;">Aktive Pipeline</div>
+        <select id="pipelineSelect" class="fd-select" onchange="onPipelineSelected()">
+          <option value="">— Pipeline auswählen —</option>
+        </select>
+        <button class="fd-button" onclick="fetchPipelines(true)" id="pipelineRefreshBtn">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+          Pipelines laden
+        </button>
+      </div>
+      <div id="pipelineSelectStatus"></div>
+
+      <!-- Zeitplan (Cron) der ausgewählten Pipeline -->
+      <div class="fd-schedule-bar" id="cronInfoBar" style="display:none;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0; color:var(--sapContent_IconColor);"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+        <div class="fd-schedule-bar__text">
+          <div class="fd-schedule-bar__label">Zeitplan (Cron)</div>
+          <div class="fd-schedule-bar__value" id="cronInfoText">—</div>
+          <code class="fd-schedule-bar__expr" id="cronInfoExpr" style="display:none;"></code>
+        </div>
+        <button class="fd-button fd-button--compact" onclick="toggleCronForm()" id="cronEditBtn" style="flex-shrink:0;">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
+          Bearbeiten
+        </button>
+        <button class="fd-button fd-button--compact fd-button--ghost" onclick="toggleCronDebug()" id="cronDebugBtn" style="flex-shrink:0;">Request-Details</button>
+      </div>
+
+      <!-- Debug: gesendete Requests & Server-Antworten zum Zeitplan -->
+      <div id="cronDebugBox" class="fd-code fd-code--muted" style="display:none; margin:-0.5rem 0 1rem;">
+        <pre id="cronDebugText" style="margin:0; white-space:pre-wrap; word-break:break-all; font-family:var(--mono); font-size:0.6875rem; line-height:1.7;">Noch keine Zeitplan-Requests gesendet.</pre>
+      </div>
+
+      <!-- Zeitplan-Editor -->
+      <div class="fd-create-form" id="form-cron">
+        <div class="fd-create-form__title">Zeitplan der Pipeline bearbeiten</div>
+        <div class="fd-form-grid">
+          <div class="fd-form-item">
+            <label class="fd-form-label">Intervall</label>
+            <select class="fd-select" id="cron-preset" onchange="onCronPresetChange()">
+              <option value="hourly">Stündlich / alle X Stunden</option>
+              <option value="daily" selected>Täglich</option>
+              <option value="weekly">Wöchentlich</option>
+              <option value="monthly">Monatlich</option>
+              <option value="custom">Benutzerdefiniert (Cron Expression)</option>
+            </select>
+          </div>
+          <div class="fd-form-item" id="cron-row-hourstep" style="display:none;">
+            <label class="fd-form-label">Alle wie viele Stunden?</label>
+            <input class="fd-input" id="cron-hourstep" type="number" min="1" max="23" value="1" oninput="updateCronPreview()">
+            <span class="fd-form-hint">1 = jede Stunde, 2 = alle 2 Stunden, …</span>
+          </div>
+          <div class="fd-form-item" id="cron-row-minute" style="display:none;">
+            <label class="fd-form-label">Zur Minute (0–59)</label>
+            <input class="fd-input" id="cron-minute" type="number" min="0" max="59" value="0" oninput="updateCronPreview()">
+            <span class="fd-form-hint">Minute innerhalb der Stunde, z.B. 30 → 10:30, 12:30, …</span>
+          </div>
+          <div class="fd-form-item" id="cron-row-time">
+            <label class="fd-form-label">Uhrzeit (UTC)</label>
+            <input class="fd-input" id="cron-time" type="time" value="03:00" oninput="updateCronPreview()">
+          </div>
+          <div class="fd-form-item" id="cron-row-weekday" style="display:none;">
+            <label class="fd-form-label">Wochentag</label>
+            <select class="fd-select" id="cron-weekday" onchange="updateCronPreview()">
+              <option value="1">Montag</option>
+              <option value="2">Dienstag</option>
+              <option value="3">Mittwoch</option>
+              <option value="4">Donnerstag</option>
+              <option value="5">Freitag</option>
+              <option value="6">Samstag</option>
+              <option value="0">Sonntag</option>
+            </select>
+          </div>
+          <div class="fd-form-item" id="cron-row-dom" style="display:none;">
+            <label class="fd-form-label">Tag im Monat (1–31)</label>
+            <input class="fd-input" id="cron-dom" type="number" min="1" max="31" value="1" oninput="updateCronPreview()">
+          </div>
+          <div class="fd-form-item fd-full" id="cron-row-custom" style="display:none;">
+            <label class="fd-form-label">Cron Expression <span style="color:var(--sapContent_LabelColor); font-weight:400;">(Minute&nbsp;Stunde&nbsp;Tag&nbsp;Monat&nbsp;Wochentag)</span></label>
+            <input class="fd-input fd-input--mono" id="cron-custom" type="text" placeholder="0 3 * * *" oninput="updateCronPreview()">
+          </div>
+          <div class="fd-form-item fd-full">
+            <label class="fd-form-label">Vorschau</label>
+            <div class="fd-value-state" id="cron-preview">—</div>
+          </div>
+        </div>
+        <div class="fd-toolbar" style="margin-top:0.75rem;">
+          <button class="fd-button fd-button--emphasized" onclick="saveCron()" id="cronSaveBtn">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            Zeitplan speichern
+          </button>
+          <button class="fd-button" onclick="hideForm('form-cron')">Abbrechen</button>
+        </div>
+        <div id="cronStatus" style="margin-top:0.625rem;"></div>
+      </div>
+
+      <!-- Inline Create Forms -->
+      <div class="fd-create-form" id="form-create-sharepoint">
+        <div class="fd-create-form__title">Neue SharePoint Pipeline erstellen</div>
+        <div class="fd-form-grid">
+          <div class="fd-form-item fd-full">
+            <label class="fd-form-label">Destination Name <span class="fd-required">*</span></label>
+            <input class="fd-input" id="sp-destination" type="text" value="joule-doc-grounding-ms-sharepoint">
+          </div>
+          <div class="fd-form-item fd-full">
+            <label class="fd-form-label">SharePoint Site Name <span class="fd-required">*</span></label>
+            <input class="fd-input" id="sp-sitename" type="text" placeholder="My-SharePoint-Site">
+          </div>
+        </div>
+        <div class="fd-toolbar" style="margin-top:0.75rem;">
+          <button class="fd-button fd-button--emphasized" onclick="execCreate('sharepoint')">Pipeline erstellen</button>
+          <button class="fd-button" onclick="hideForm('form-create-sharepoint')">Abbrechen</button>
+        </div>
+      </div>
+
+      <div class="fd-create-form" id="form-create-workzone">
+        <div class="fd-create-form__title">Neue WorkZone Pipeline erstellen</div>
+        <div class="fd-form-grid">
+          <div class="fd-form-item fd-full">
+            <label class="fd-form-label">Destination Name <span class="fd-required">*</span></label>
+            <input class="fd-input" id="wz-destination" type="text" placeholder="joule-doc-grounding-workzone">
+          </div>
+        </div>
+        <div class="fd-toolbar" style="margin-top:0.75rem;">
+          <button class="fd-button fd-button--emphasized" onclick="execCreate('workzone')">Pipeline erstellen</button>
+          <button class="fd-button" onclick="hideForm('form-create-workzone')">Abbrechen</button>
+        </div>
+      </div>
+
+      <!-- Operation Groups -->
+      <div class="fd-op-group">
+        <div class="fd-section-title">Pipeline erstellen</div>
+        <div class="fd-op-group__row">
+          <button class="fd-button" onclick="showForm('sharepoint')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            SharePoint Pipeline
+          </button>
+          <button class="fd-button" onclick="showForm('workzone')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            WorkZone Pipeline
+          </button>
+        </div>
+      </div>
+
+      <div class="fd-op-group">
+        <div class="fd-section-title">Pipeline steuern</div>
+        <div class="fd-op-group__row">
+          <button class="fd-button fd-button--emphasized" onclick="execOp('trigger')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
+            Triggern (vollständig)
+          </button>
+          <button class="fd-button" onclick="execOp('trigger-metadata')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
+            Nur Metadaten triggern
+          </button>
+          <button class="fd-button fd-button--negative" onclick="execOp('delete')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+            Pipeline löschen
+          </button>
+        </div>
+      </div>
+
+      <div class="fd-op-group">
+        <div class="fd-section-title">Monitoring &amp; Übersicht</div>
+        <div class="fd-op-group__row">
+          <button class="fd-button" onclick="execOp('list')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
+            Alle Pipelines
+          </button>
+          <button class="fd-button" onclick="execOp('documents')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+            Dokumente
+          </button>
+          <button class="fd-button" onclick="execOp('executions')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5"/></svg>
+            Ausführungen
+          </button>
+        </div>
+      </div>
+
+      <!-- Response area -->
+      <div id="apiStatus"></div>
+      <div id="apiResponse" style="display:none;">
+        <div class="fd-output-header" style="margin-top:0.875rem;">
+          <div class="fd-section-title" id="apiResponseLabel" style="margin:0;">Antwort</div>
+          <button class="fd-button fd-button--compact" onclick="copyResponse()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Kopieren
+          </button>
+        </div>
+        <div class="fd-code fd-code--response" id="responseDisplay"></div>
+      </div>
+      <div id="apiDebug" class="fd-message-strip fd-message-strip--information" style="display:none; font-size:0.75rem; line-height:1.8;"></div>
+
+      <!-- Manual Request (collapsed) -->
+      <hr class="fd-divider">
+      <button class="fd-button fd-button--ghost" style="padding:0 0.25rem;" onclick="toggleManual()" id="manualToggleBtn">
+        <svg id="manualChevron" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.2s;"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+        Manueller Request
+      </button>
+      <div id="manualSection" style="display:none; margin-top:0.75rem;">
+        <div style="display:flex; gap:0.5rem; margin-bottom:0.625rem;">
+          <select class="fd-select" id="apiMethod" style="width:7rem; flex-shrink:0;">
+            <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+          </select>
+          <input class="fd-input fd-input--mono" id="apiUrl" type="text" placeholder="https://…" style="flex:1;">
+        </div>
+        <div id="bodyRow" style="display:none; margin-bottom:0.625rem;">
+          <textarea class="fd-textarea" id="apiBody" placeholder='{ "key": "value" }'></textarea>
+        </div>
+        <div class="fd-toolbar">
+          <button class="fd-button fd-button--emphasized" onclick="callApi()">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
+            Request senden
+          </button>
+          <button class="fd-button fd-button--ghost" onclick="toggleApiCurl()" id="apiCurlBtn">curl anzeigen</button>
+        </div>
+        <div id="apiCurlPreview" class="fd-code fd-code--muted" style="display:none; margin-top:0.625rem;">
+          <div class="fd-output-header" style="margin-bottom:0.375rem;">
+            <span class="fd-section-title" style="margin:0;">curl-Befehl</span>
+            <button class="fd-button fd-button--compact" onclick="copyApiCurl()">Kopieren</button>
+          </div>
+          <pre id="apiCurlText" style="margin:0; white-space:pre-wrap; word-break:break-all; font-family:var(--mono); font-size:0.6875rem; line-height:1.7;"></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /fd-page -->
+
+<script>
+let state = { fields: null, token: null, tokenExpiry: null, grounding: null, pipelines: {}, currentCron: null,
+              cronEnabled: undefined, cronDebug: { get: null, patch: null } };
+let curlVisible = false;
+
+// Drag & Drop
+function ev(e, cls) {
+  e.preventDefault();
+  document.getElementById('dropZone').className = 'fd-upload-area' + (cls ? ' fd-upload-area--' + cls : '');
+}
+function evGrounding(e, cls) {
+  e.preventDefault();
+  document.getElementById('groundingDropZone').className = 'fd-upload-area' + (cls ? ' fd-upload-area--' + cls : '');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').className = 'fd-upload-area';
+  if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+}
+function loadFile(e) { if (e.target.files[0]) readFile(e.target.files[0]); }
+
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    try   { parseJSON(JSON.parse(ev.target.result)); }
+    catch (err) { showStatus('parseStatus', 'Ungültiges JSON: ' + err.message, 'error'); }
+  };
+  r.readAsText(file);
+}
+
+// Cloud Identity Key parse
+async function parseJSON(data) {
+  setPill('st-xsuaa', 'loading', 'Cloud Identity Key wird gelesen…');
+  const res    = await fetch('/parse', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const result = await res.json();
+  if (result.error) { setPill('st-xsuaa', 'err', 'Cloud Identity Key – Fehler'); showTokenError(result.error); return; }
+
+  state.fields = result.fields;
+  setPill('st-xsuaa', 'ok', 'Cloud Identity Key');
+  document.getElementById('techDetailsWrapper').style.display = '';
+
+  // Populate tech detail fields
+  document.getElementById('f-clientid').textContent   = result.fields.clientid       || '—';
+  document.getElementById('f-credtype').textContent   = result.fields.credential_type || '—';
+  document.getElementById('f-tokenurl').textContent   = result.fields.token_url       || '—';
+  document.getElementById('f-tokenurl-edit').value    = result.fields.token_url       || '';
+  document.getElementById('f-serviceurl').textContent = result.fields.service_url     || '—';
+  document.getElementById('f-apptid').textContent     = result.fields.app_tid         || '—';
+  const exp = result.fields.cert_expires;
+  if (exp) {
+    const d    = new Date(exp);
+    const days = Math.floor((d - Date.now()) / 86400000);
+    document.getElementById('f-certexp').textContent = d.toLocaleDateString('de-DE') + ` (in ${days} Tagen)`;
+  }
+
+  // Mark upload zone done
+  const dz = document.getElementById('dropZone');
+  dz.className = 'fd-upload-area fd-upload-area--done';
+  document.getElementById('uploadLabel1').innerHTML = '&#10003; Cloud Identity Key geladen';
+  document.getElementById('uploadHint1').textContent = result.fields.clientid || '';
+
+  // Auto-fetch token
+  setPill('st-token', 'loading', 'Bearer Token wird erzeugt…');
+  getToken();
+
+  // curl preview
+  document.getElementById('curlPreview').textContent =
+    `curl --request POST \\\n  --url "${result.fields.token_url}" \\\n  --header "accept: application/json" \\\n  --header "content-type: application/x-www-form-urlencoded" \\\n  --data "client_id=${result.fields.clientid}" \\\n  --data "grant_type=client_credentials" \\\n  --cert certs/client.crt \\\n  --key certs/client.key`;
+  document.getElementById('curlBtn').style.display = '';
+}
+
+// Get Token
+async function getToken() {
+  if (!state.fields) return;
+  const btn = document.getElementById('tokenBtn');
+  if (btn) btn.disabled = true;
+
+  const urlOverride  = document.getElementById('f-tokenurl-edit').value.trim();
+  const fieldsToSend = urlOverride ? { ...state.fields, token_url: urlOverride } : state.fields;
+
+  const res    = await fetch('/get-token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fields: fieldsToSend }) });
+  const result = await res.json();
+  if (btn) btn.disabled = false;
+
+  if (result.error) { setPill('st-token', 'err', 'Token fehlgeschlagen'); showTokenError(result.error); return; }
+
+  state.token       = result.token.access_token;
+  const expiresIn   = result.token.expires_in || 3600;
+  state.tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+  const ablaufzeit  = state.tokenExpiry.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+
+  setPill('st-token', 'ok', `Bearer Token aktiv · läuft ab ${ablaufzeit}`);
+  document.getElementById('tokenError').style.display   = 'none';
+  document.getElementById('copyTokenBtn').style.display = '';
+  document.getElementById('tokenBtn').style.display     = '';
+
+  document.getElementById('tokenDisplay').textContent   = state.token;
+  document.getElementById('tokenType').textContent      = result.token.token_type || 'Bearer';
+  document.getElementById('tokenExpiry').textContent    = Math.floor(expiresIn / 60) + ' Minuten';
+  document.getElementById('tokenAbläuft').textContent   = ablaufzeit;
+  document.getElementById('tokenResult').style.display  = '';
+
+  activateStep();
+  setWizardDone(1);
+
+  if (state.grounding && state.grounding.base_url) fetchPipelines(false);
+}
+
+// curl toggle
+function toggleCurl() {
+  curlVisible = !curlVisible;
+  document.getElementById('curlPreview').style.display = curlVisible ? '' : 'none';
+  document.getElementById('curlBtn').textContent       = curlVisible ? 'curl verbergen' : 'curl anzeigen';
+}
+
+// Manual API call
+async function callApi() {
+  if (!state.token) { showStatus('apiStatus', 'Zuerst einen Bearer Token abrufen.', 'error'); return; }
+  let url      = document.getElementById('apiUrl').value.trim();
+  const method = document.getElementById('apiMethod').value;
+  const bodyText = document.getElementById('apiBody').value.trim();
+  if (!url) { showStatus('apiStatus', 'Bitte eine URL eingeben.', 'error'); return; }
+  if (url.startsWith('/')) url = getBaseUrl() + url;
+
+  let body = null;
+  if (bodyText && ['POST','PUT','PATCH'].includes(method)) {
+    try   { body = JSON.parse(bodyText); }
+    catch (e) { showStatus('apiStatus', 'Ungültiger JSON Body: ' + e.message, 'error'); return; }
+  }
+
+  showStatus('apiStatus', 'Wird gesendet…', 'info');
+  document.getElementById('apiResponse').style.display = 'none';
+
+  const res    = await fetch('/api-call', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ method, url, token: state.token, body }) });
+  const result = await res.json();
+
+  if (result.error) { showStatus('apiStatus', result.error, 'error'); return; }
+  showStatus('apiStatus', result.ok ? 'Antwort erhalten' : 'Request abgeschlossen (mit Fehlern)', result.ok ? 'success' : 'warning');
+  if (apiCurlVisible) document.getElementById('apiCurlText').textContent = buildApiCurl();
+
+  const display = document.getElementById('responseDisplay');
+  display.textContent = result.parsed ? JSON.stringify(result.parsed, null, 2) : result.raw;
+  display.className   = 'fd-code fd-code--response' + (result.ok ? '' : ' fd-code--error');
+  document.getElementById('apiResponse').style.display = '';
+
+  const debugBox = document.getElementById('apiDebug');
+  if (!result.ok && result.debug) {
+    debugBox.style.display = '';
+    debugBox.innerHTML = `<strong>Debug Info</strong> &nbsp; URL: <code>${result.debug.url}</code> &nbsp; Methode: <code>${result.debug.method}</code> &nbsp; HTTP Status: <code>${result.status}</code>`;
+  } else { debugBox.style.display = 'none'; }
+}
+
+document.getElementById('apiMethod').addEventListener('change', function() {
+  document.getElementById('bodyRow').style.display = ['POST','PUT','PATCH'].includes(this.value) ? '' : 'none';
+  if (apiCurlVisible) document.getElementById('apiCurlText').textContent = buildApiCurl();
+});
+document.getElementById('apiUrl').addEventListener('input', () => { if (apiCurlVisible) document.getElementById('apiCurlText').textContent = buildApiCurl(); });
+document.getElementById('apiBody').addEventListener('input', () => { if (apiCurlVisible) document.getElementById('apiCurlText').textContent = buildApiCurl(); });
+
+// Pipeline Operations
+const OPS = {
+  'list':             { method:'GET',    path:'/pipeline/api/v1/pipeline',                         needsId:false },
+  'trigger':          { method:'POST',   path:'/pipeline/api/v1/pipeline/trigger',                 needsId:true,  body: id => ({ pipelineId:id, metadataOnly:false }) },
+  'trigger-metadata': { method:'POST',   path:'/pipeline/api/v1/pipeline/trigger',                 needsId:true,  body: id => ({ pipelineId:id, metadataOnly:true  }) },
+  'documents':        { method:'GET',    path: id => `/pipeline/api/v1/pipeline/${id}/documents`,  needsId:true  },
+  'executions':       { method:'GET',    path: id => `/pipeline/api/v1/pipeline/${id}/executions`, needsId:true  },
+  'delete':           { method:'DELETE', path: id => `/pipeline/api/v1/pipeline/${id}`,            needsId:true  },
+};
+
+function getBaseUrl() {
+  if (state.grounding && state.grounding.base_url) return state.grounding.base_url.replace(/\/$/, '');
+  if (state.fields    && state.fields.service_url)  return state.fields.service_url.replace(/\/$/, '');
+  return '';
+}
+
+async function fetchPipelines(showMsg) {
+  if (!state.token) { showStatus('pipelineSelectStatus', 'Zuerst einen Bearer Token abrufen.', 'error'); return; }
+  const base = getBaseUrl();
+  if (!base) { showStatus('pipelineSelectStatus', 'Zuerst Grounding Service Binding hochladen.', 'error'); return; }
+
+  const btn = document.getElementById('pipelineRefreshBtn');
+  btn.disabled = true;
+  if (showMsg) showStatus('pipelineSelectStatus', 'Pipelines werden geladen…', 'info');
+
+  const { parsed, err } = await apiCall('GET', base + '/pipeline/api/v1/pipeline', null);
+  btn.disabled = false;
+
+  if (err || !parsed) { showStatus('pipelineSelectStatus', 'Fehler beim Laden: ' + (err || 'Ungültige Antwort'), 'error'); return; }
+
+  const list = Array.isArray(parsed) ? parsed : (parsed.pipelines || parsed.value || []);
+  const sel  = document.getElementById('pipelineSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Pipeline auswählen —</option>';
+  state.pipelines = {};
+  list.forEach(p => {
+    const id  = p.id || p.pipelineId || '';
+    state.pipelines[id] = p;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = p.type ? `${p.type} – ${id}` : id;
+    sel.appendChild(opt);
+  });
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  showStatus('pipelineSelectStatus', list.length ? `${list.length} Pipeline(s) geladen.` : 'Keine Pipelines gefunden.', 'success');
+  onPipelineSelected();
+}
+
+async function execOp(key) {
+  const op = OPS[key];
+  if (!op) return;
+  if (op.needsId) {
+    let id = document.getElementById('pipelineSelect').value;
+    if (!id) { await fetchPipelines(false); id = document.getElementById('pipelineSelect').value; }
+    if (!id) { showStatus('apiStatus', 'Bitte eine Pipeline aus der Auswahlliste wählen.', 'error'); return; }
+    if (key === 'delete' && !confirm(`Pipeline "${id}" wirklich löschen?`)) return;
+    const path  = typeof op.path === 'function' ? op.path(id) : op.path;
+    const body  = op.body ? op.body(id) : null;
+    const label = { trigger:'Pipeline getriggert', 'trigger-metadata':'Metadaten getriggert', documents:'Dokumente', executions:'Ausführungen', delete:'Pipeline gelöscht' }[key] || 'Antwort';
+    await runOp(op.method, getBaseUrl() + path, body, label);
+  } else {
+    await runOp(op.method, getBaseUrl() + op.path, null, 'Alle Pipelines');
+  }
+}
+
+async function runOp(method, url, body, label) {
+  showStatus('apiStatus', label + '…', 'info');
+  document.getElementById('apiResponse').style.display = 'none';
+  const { status, raw, parsed, err } = await apiCall(method, url, body);
+  if (err) { showStatus('apiStatus', 'Fehler: ' + err, 'error'); return; }
+  const ok = status < 400;
+  showStatus('apiStatus', ok ? label : `HTTP ${status}`, ok ? 'success' : 'error');
+  document.getElementById('apiResponseLabel').textContent = label.toUpperCase();
+  const display = document.getElementById('responseDisplay');
+  display.textContent = parsed ? JSON.stringify(parsed, null, 2) : (raw || '(Leere Antwort)');
+  display.className   = 'fd-code fd-code--response' + (ok ? '' : ' fd-code--error');
+  document.getElementById('apiResponse').style.display  = '';
+  document.getElementById('apiDebug').style.display     = 'none';
+}
+
+async function apiCall(method, url, body) {
+  try {
+    const res    = await fetch('/api-call', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ method, url, token: state.token, body: body || null,
+        cert_pem: state.fields ? state.fields.cert_pem : '',
+        key_pem:  state.fields ? state.fields.key_pem  : '' }),
+    });
+    const result = await res.json();
+    return { status: result.status, raw: result.raw, parsed: result.parsed, err: result.error || null };
+  } catch(e) {
+    return { status: null, raw: null, parsed: null, err: e.message };
+  }
+}
+
+// Create Forms
+function showForm(key) {
+  document.getElementById('form-create-sharepoint').style.display = 'none';
+  document.getElementById('form-create-workzone').style.display   = 'none';
+  document.getElementById('form-cron').style.display              = 'none';
+  document.getElementById('form-create-' + key).style.display = 'block';
+}
+function hideForm(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+async function execCreate(type) {
+  const base = getBaseUrl();
+  if (!base) { showStatus('apiStatus', 'Zuerst Grounding Service Binding hochladen.', 'error'); return; }
+  let body;
+  if (type === 'sharepoint') {
+    const dest = document.getElementById('sp-destination').value.trim();
+    const site = document.getElementById('sp-sitename').value.trim();
+    if (!dest || !site) { alert('Bitte Destination Name und Site Name ausfüllen.'); return; }
+    body = { type:'MSSharePoint', configuration:{ destination:dest, sharePoint:{ site:{ name:site } } } };
+    hideForm('form-create-sharepoint');
+  } else {
+    const dest = document.getElementById('wz-destination').value.trim();
+    if (!dest) { alert('Bitte Destination Name ausfüllen.'); return; }
+    body = { type:'WorkZone', metadata:{ destination:dest } };
+    hideForm('form-create-workzone');
+  }
+  await runOp('POST', base + '/pipeline/api/v1/pipeline', body, 'Pipeline erstellt');
+  await fetchPipelines(false);
+}
+
+// Zeitplan (Cron)
+const WEEKDAYS_DE = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+
+// Sucht eine cronExpression an beliebiger Stelle im Antwort-Objekt
+function extractCron(obj, depth) {
+  depth = depth || 0;
+  if (!obj || typeof obj !== 'object' || depth > 6) return null;
+  for (const [k, v] of Object.entries(obj)) {
+    if (/cronexpression/i.test(k) && typeof v === 'string' && v.trim()) return v.trim();
+    if (v && typeof v === 'object') {
+      const r = extractCron(v, depth + 1);
+      if (r) return r;
+    }
+  }
+  return null;
+}
+
+// isCronEnabled-Flag finden (GET liefert die Expression selbst nicht)
+function extractCronEnabled(obj, depth) {
+  depth = depth || 0;
+  if (!obj || typeof obj !== 'object' || depth > 6) return undefined;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === 'isCronEnabled' && typeof v === 'boolean') return v;
+    if (v && typeof v === 'object') {
+      const r = extractCronEnabled(v, depth + 1);
+      if (r !== undefined) return r;
+    }
+  }
+  return undefined;
+}
+
+async function onPipelineSelected() {
+  const id  = document.getElementById('pipelineSelect').value;
+  const bar = document.getElementById('cronInfoBar');
+  hideForm('form-cron');
+  if (!id) { bar.style.display = 'none'; state.currentCron = null; return; }
+
+  bar.style.display = '';
+  state.currentCron = extractCron(state.pipelines[id]);
+  renderCronInfo();
+  await refreshCronFromServer(id);
+}
+
+// Zeitplan-Status aus den Pipeline-Details laden
+async function refreshCronFromServer(id) {
+  document.getElementById('cronInfoText').textContent = 'Wird geladen…';
+  const url = getBaseUrl() + `/pipeline/api/v1/pipeline/${id}`;
+  const { status, raw, parsed, err } = await apiCall('GET', url, null);
+  state.cronDebug.get = { url, status, raw, err, time: new Date().toLocaleTimeString() };
+  renderCronDebug();
+  // Auswahl kann sich während des Ladens geändert haben
+  if (document.getElementById('pipelineSelect').value !== id) return;
+  if (parsed && status < 400) {
+    state.pipelines[id] = Object.assign({}, state.pipelines[id], parsed);
+    state.currentCron = extractCron(parsed);
+    state.cronEnabled = extractCronEnabled(parsed);
+  } else {
+    state.currentCron = extractCron(state.pipelines[id]);
+    state.cronEnabled = undefined;
+  }
+  renderCronInfo();
+}
+
+let cronDebugVisible = false;
+function toggleCronDebug() {
+  cronDebugVisible = !cronDebugVisible;
+  document.getElementById('cronDebugBox').style.display = cronDebugVisible ? '' : 'none';
+  document.getElementById('cronDebugBtn').textContent   = cronDebugVisible ? 'Details verbergen' : 'Request-Details';
+  if (cronDebugVisible) renderCronDebug();
+}
+
+function renderCronDebug() {
+  const d = state.cronDebug;
+  const fmtBody = b => { try { return JSON.stringify(typeof b === 'string' ? JSON.parse(b) : b, null, 2); } catch { return String(b); } };
+  let txt = '';
+  if (d.patch) {
+    txt += `── Zeitplan speichern (${d.patch.time}) ─────────────────────\n`
+        +  `PATCH ${d.patch.url}\n\nGesendeter Body:\n${fmtBody(d.patch.body)}\n\n`
+        +  (d.patch.err ? `Fehler: ${d.patch.err}\n` : `HTTP Status: ${d.patch.status}\nServer-Antwort:\n${d.patch.raw ? fmtBody(d.patch.raw) : '(leer)'}\n`)
+        +  `\n`;
+  }
+  if (d.get) {
+    txt += `── Pipeline-Details laden (${d.get.time}) ───────────────────\n`
+        +  `GET ${d.get.url}\n\n`
+        +  (d.get.err ? `Fehler: ${d.get.err}` : `HTTP Status: ${d.get.status}\nServer-Antwort:\n${d.get.raw ? fmtBody(d.get.raw) : '(leer)'}`);
+  }
+  document.getElementById('cronDebugText').textContent = txt || 'Noch keine Zeitplan-Requests gesendet.';
+}
+
+function renderCronInfo() {
+  const txt  = document.getElementById('cronInfoText');
+  const expr = document.getElementById('cronInfoExpr');
+  if (state.currentCron) {
+    txt.textContent  = describeCron(state.currentCron) + (state.cronEnabled === true ? ' · aktiv' : '');
+    expr.textContent = state.currentCron;
+    expr.style.display = '';
+  } else if (state.cronEnabled === true) {
+    txt.textContent  = 'Zeitplan aktiv';
+    expr.textContent = 'isCronEnabled: true – die Pipeline-API gibt die Cron Expression nicht zurück';
+    expr.style.display = '';
+  } else {
+    txt.textContent  = 'Kein Zeitplan gesetzt';
+    expr.style.display = 'none';
+  }
+}
+
+// Menschenlesbare Beschreibung einer 5-Feld-Cron-Expression (Minute Stunde Tag Monat Wochentag)
+function describeCron(exprRaw) {
+  const expr  = String(exprRaw).trim();
+  const parts = expr.split(/\s+/);
+  if (parts.length !== 5) return `Cron: ${expr}`;
+  const [min, hour, dom, month, dow] = parts;
+
+  const isNum = v => /^\d+$/.test(v);
+  const pad   = v => String(v).padStart(2, '0');
+  const time  = (isNum(min) && isNum(hour)) ? `${pad(hour)}:${pad(min)} Uhr (UTC)` : null;
+
+  if (month === '*' && time) {
+    if (dom === '*' && dow === '*')        return `Täglich um ${time}`;
+    if (dom === '*' && isNum(dow)) {
+      const day = WEEKDAYS_DE[parseInt(dow, 10) % 7];
+      return `Wöchentlich am ${day} um ${time}`;
+    }
+    if (isNum(dom) && dow === '*')         return `Monatlich am ${parseInt(dom, 10)}. um ${time}`;
+  }
+  if (isNum(min) && hour === '*' && dom === '*' && month === '*' && dow === '*')
+    return `Jede Stunde zur Minute ${parseInt(min, 10)} (z.B. 10:${pad(min)}, 11:${pad(min)}, …)`;
+  if (isNum(min) && /^\*\/\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*')
+    return `Alle ${parseInt(hour.slice(2), 10)} Stunden zur Minute ${parseInt(min, 10)} (UTC)`;
+  if (/^\*\/\d+$/.test(min) && hour === '*' && dom === '*' && month === '*' && dow === '*')
+    return `Alle ${min.slice(2)} Minuten`;
+  if (min === '*' && hour === '*' && dom === '*' && month === '*' && dow === '*')
+    return 'Jede Minute';
+  return `Cron: ${expr}`;
+}
+
+function toggleCronForm() {
+  const form = document.getElementById('form-cron');
+  if (form.style.display === 'block') { hideForm('form-cron'); return; }
+  document.getElementById('form-create-sharepoint').style.display = 'none';
+  document.getElementById('form-create-workzone').style.display   = 'none';
+  showStatus('cronStatus', '', '');
+  prefillCronForm(state.currentCron);
+  form.style.display = 'block';
+}
+
+// Bestehende Expression in die Formularfelder übernehmen (sonst Standard: täglich 03:00)
+function prefillCronForm(expr) {
+  const preset = document.getElementById('cron-preset');
+  const setTime = (h, m) => document.getElementById('cron-time').value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  preset.value = 'daily'; setTime(3, 0);
+
+  if (expr) {
+    const parts = String(expr).trim().split(/\s+/);
+    const isNum = v => /^\d+$/.test(v);
+    if (parts.length === 5) {
+      const [min, hour, dom, month, dow] = parts;
+      if (isNum(min) && hour === '*' && dom === '*' && month === '*' && dow === '*') {
+        preset.value = 'hourly';
+        document.getElementById('cron-minute').value   = parseInt(min, 10);
+        document.getElementById('cron-hourstep').value = 1;
+      } else if (isNum(min) && /^\*\/\d+$/.test(hour) && dom === '*' && month === '*' && dow === '*') {
+        preset.value = 'hourly';
+        document.getElementById('cron-minute').value   = parseInt(min, 10);
+        document.getElementById('cron-hourstep').value = parseInt(hour.slice(2), 10);
+      } else if (isNum(min) && isNum(hour) && dom === '*' && month === '*' && dow === '*') {
+        preset.value = 'daily'; setTime(hour, min);
+      } else if (isNum(min) && isNum(hour) && dom === '*' && month === '*' && isNum(dow)) {
+        preset.value = 'weekly'; setTime(hour, min);
+        document.getElementById('cron-weekday').value = String(parseInt(dow, 10) % 7);
+      } else if (isNum(min) && isNum(hour) && isNum(dom) && month === '*' && dow === '*') {
+        preset.value = 'monthly'; setTime(hour, min);
+        document.getElementById('cron-dom').value = parseInt(dom, 10);
+      } else {
+        preset.value = 'custom';
+        document.getElementById('cron-custom').value = expr;
+      }
+    } else {
+      preset.value = 'custom';
+      document.getElementById('cron-custom').value = expr;
+    }
+  }
+  onCronPresetChange();
+}
+
+function onCronPresetChange() {
+  const p = document.getElementById('cron-preset').value;
+  document.getElementById('cron-row-hourstep').style.display = p === 'hourly' ? '' : 'none';
+  document.getElementById('cron-row-minute').style.display  = p === 'hourly'  ? '' : 'none';
+  document.getElementById('cron-row-time').style.display    = ['daily','weekly','monthly'].includes(p) ? '' : 'none';
+  document.getElementById('cron-row-weekday').style.display = p === 'weekly'  ? '' : 'none';
+  document.getElementById('cron-row-dom').style.display     = p === 'monthly' ? '' : 'none';
+  document.getElementById('cron-row-custom').style.display  = p === 'custom'  ? '' : 'none';
+  updateCronPreview();
+}
+
+function buildCronFromForm() {
+  const p = document.getElementById('cron-preset').value;
+  if (p === 'custom') return document.getElementById('cron-custom').value.trim();
+  if (p === 'hourly') {
+    const m = parseInt(document.getElementById('cron-minute').value, 10);
+    const n = parseInt(document.getElementById('cron-hourstep').value, 10);
+    if (isNaN(m) || m < 0 || m > 59 || isNaN(n) || n < 1 || n > 23) return null;
+    return n === 1 ? `${m} * * * *` : `${m} */${n} * * *`;
+  }
+  const t = document.getElementById('cron-time').value;
+  if (!/^\d{2}:\d{2}$/.test(t)) return null;
+  const [h, m] = t.split(':').map(v => parseInt(v, 10));
+  if (p === 'daily')  return `${m} ${h} * * *`;
+  if (p === 'weekly') return `${m} ${h} * * ${document.getElementById('cron-weekday').value}`;
+  if (p === 'monthly') {
+    const d = parseInt(document.getElementById('cron-dom').value, 10);
+    if (isNaN(d) || d < 1 || d > 31) return null;
+    return `${m} ${h} ${d} * *`;
+  }
+  return null;
+}
+
+function updateCronPreview() {
+  const preview = document.getElementById('cron-preview');
+  const expr    = buildCronFromForm();
+  if (!expr) { preview.textContent = '— Bitte Eingaben vervollständigen —'; return; }
+  const parts = expr.split(/\s+/);
+  if (parts.length !== 5) { preview.innerHTML = `<code>${expr}</code> – keine gültige 5-Feld-Cron-Expression`; return; }
+  let html = `${describeCron(expr)} &nbsp;·&nbsp; <code>${expr}</code>`;
+  // SAP akzeptiert nur Intervalle > 1 Stunde
+  if (parts[1] === '*' || parts[1] === '*/1') {
+    html += `<br><span style="color:var(--sapCriticalTextColor, #e76500);">⚠ SAP verlangt für Grounding-Zeitpläne ein Intervall größer als 1 Stunde – dieser Zeitplan wird möglicherweise nicht ausgeführt.</span>`;
+  }
+  preview.innerHTML = html;
+}
+
+async function saveCron() {
+  const id = document.getElementById('pipelineSelect').value;
+  if (!id) { showStatus('cronStatus', 'Bitte zuerst eine Pipeline auswählen.', 'error'); return; }
+  const expr = buildCronFromForm();
+  if (!expr || expr.split(/\s+/).length !== 5) {
+    showStatus('cronStatus', 'Ungültige Cron Expression – es werden 5 Felder erwartet (Minute Stunde Tag Monat Wochentag).', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('cronSaveBtn');
+  btn.disabled = true;
+  showStatus('cronStatus', 'Zeitplan wird gespeichert…', 'info');
+
+  const url  = getBaseUrl() + `/pipeline/api/v1/pipeline/${id}`;
+  const body = { configuration: { cronExpression: expr } };
+  const { status, raw, parsed, err } = await apiCall('PATCH', url, body);
+  state.cronDebug.patch = { url, body, status, raw, err, time: new Date().toLocaleTimeString() };
+  renderCronDebug();
+  btn.disabled = false;
+
+  if (err)           { showStatus('cronStatus', 'Fehler: ' + err, 'error'); return; }
+  if (status >= 400) { showStatus('cronStatus', `HTTP ${status}: ${raw || 'Aktualisierung fehlgeschlagen'}`, 'error'); return; }
+
+  // PATCH-Antwort enthält die cronExpression als Echo, GET nur isCronEnabled
+  const patchEcho = extractCron(parsed);
+
+  showStatus('cronStatus', `HTTP ${status} – Zeitplan wird verifiziert…`, 'info');
+  await refreshCronFromServer(id);
+
+  const confirmed = patchEcho === expr || state.currentCron === expr || state.cronEnabled === true;
+  if (confirmed) {
+    hideForm('form-cron');
+    const suffix = state.cronEnabled === true ? ' (isCronEnabled: true)' : '';
+    showStatus('pipelineSelectStatus', `Zeitplan gespeichert: ${describeCron(expr)}${suffix}`, 'success');
+  } else if (patchEcho && patchEcho !== expr) {
+    showStatus('cronStatus', `Server hat einen anderen Zeitplan übernommen: "${patchEcho}" statt "${expr}". Details unter „Request-Details".`, 'warning');
+    if (!cronDebugVisible) toggleCronDebug();
+  } else {
+    showStatus('cronStatus', `Server meldet HTTP ${status}, bestätigt den Zeitplan aber nicht (kein Echo, isCronEnabled nicht true). Die Server-Antwort steht unter „Request-Details".`, 'warning');
+    if (!cronDebugVisible) toggleCronDebug();
+  }
+}
+
+// Toggle helpers
+function toggleManual() {
+  const sec     = document.getElementById('manualSection');
+  const chevron = document.getElementById('manualChevron');
+  const open    = sec.style.display === '';
+  sec.style.display       = open ? 'none' : '';
+  chevron.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+// Grounding
+function onDropGrounding(e) {
+  e.preventDefault();
+  document.getElementById('groundingDropZone').className = 'fd-upload-area';
+  if (e.dataTransfer.files[0]) readGroundingFile(e.dataTransfer.files[0]);
+}
+function loadGroundingFile(e) { if (e.target.files[0]) readGroundingFile(e.target.files[0]); }
+function readGroundingFile(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    try   { parseGroundingJSON(JSON.parse(ev.target.result)); }
+    catch (err) { showStatus('groundingStatus', 'Ungültiges JSON: ' + err.message, 'error'); }
+  };
+  r.readAsText(file);
+}
+async function parseGroundingJSON(data) {
+  setPill('st-ground', 'loading', 'Grounding Binding wird gelesen…');
+  const res    = await fetch('/parse-grounding', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const result = await res.json();
+  if (result.error) { setPill('st-ground', 'err', 'Grounding Binding – Fehler'); showTokenError(result.error); return; }
+
+  state.grounding = result.grounding;
+  setPill('st-ground', 'ok', 'Grounding Binding');
+  document.getElementById('g-baseurl').textContent = result.grounding.base_url || '—';
+
+  const swagger     = result.grounding.swagger || {};
+  const swaggerKeys = Object.keys(swagger);
+  if (swaggerKeys.length) {
+    document.getElementById('g-swagger-links').innerHTML = swaggerKeys.map(k =>
+      `<a href="${swagger[k]}" target="_blank" class="fd-button fd-button--compact" style="text-decoration:none;">${k}</a>`
+    ).join('');
+    document.getElementById('g-swagger').style.display = '';
+  }
+
+  const dz = document.getElementById('groundingDropZone');
+  dz.className = 'fd-upload-area fd-upload-area--done';
+  document.getElementById('uploadLabel2').innerHTML  = '&#10003; Grounding Binding geladen';
+  document.getElementById('uploadHint2').textContent = result.grounding.base_url || '';
+}
+
+// Status Helpers
+function copyToken() {
+  navigator.clipboard.writeText(state.token || '').then(() => {
+    const btn = document.getElementById('copyTokenBtn');
+    const orig = btn.innerHTML;
+    btn.textContent = '✓ Kopiert!';
+    setTimeout(() => btn.innerHTML = orig, 1800);
+  });
+}
+function copyResponse() {
+  navigator.clipboard.writeText(document.getElementById('responseDisplay').textContent).then(() => {
+    const btn = document.querySelector('#apiResponse .fd-button');
+    if (btn) { btn.textContent = '✓ Kopiert!'; setTimeout(() => btn.textContent = 'Kopieren', 1800); }
+  });
+}
+
+let apiCurlVisible = false;
+function buildApiCurl() {
+  if (!state.token) return '# Zuerst Bearer Token abrufen';
+  let url      = document.getElementById('apiUrl').value.trim();
+  const method = document.getElementById('apiMethod').value;
+  const body   = document.getElementById('apiBody').value.trim();
+  if (url.startsWith('/')) url = getBaseUrl() + url;
+  let cmd = `curl \\\n  --request ${method} \\\n  --url "${url}" \\\n  --header "accept: application/json" \\\n  --header "Authorization: Bearer ${state.token}" \\\n  --cert "certs/client.crt" \\\n  --key "certs/client.key"`;
+  if (body && ['POST','PUT','PATCH'].includes(method))
+    cmd += ` \\\n  --header "content-type: application/json" \\\n  --data "${body.replace(/"/g,'\\"')}"`;
+  return cmd;
+}
+function toggleApiCurl() {
+  apiCurlVisible = !apiCurlVisible;
+  document.getElementById('apiCurlPreview').style.display = apiCurlVisible ? '' : 'none';
+  document.getElementById('apiCurlBtn').textContent       = apiCurlVisible ? 'curl verbergen' : 'curl anzeigen';
+  if (apiCurlVisible) document.getElementById('apiCurlText').textContent = buildApiCurl();
+}
+function copyApiCurl() {
+  navigator.clipboard.writeText(buildApiCurl()).then(() => {
+    const btn = document.querySelector('#apiCurlPreview .fd-button');
+    if (btn) { btn.textContent = '✓ Kopiert!'; setTimeout(() => btn.textContent = 'Kopieren', 1800); }
+  });
+}
+
+const MSG_ICONS = {
+  success:     '<svg class="fd-message-strip__icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>',
+  error:       '<svg class="fd-message-strip__icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/></svg>',
+  warning:     '<svg class="fd-message-strip__icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>',
+  information: '<svg class="fd-message-strip__icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/></svg>',
+};
+// Map simple type strings to fd-message-strip modifier and icon key
+const TYPE_MAP = { success:'success', error:'error', warning:'warning', info:'information' };
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!msg) { el.innerHTML = ''; return; }
+  const fdType = TYPE_MAP[type] || 'information';
+  el.innerHTML = `<div class="fd-message-strip fd-message-strip--${fdType}">${MSG_ICONS[fdType] || ''}${msg}</div>`;
+}
+
+function activateStep() {
+  const s = document.getElementById('step4');
+  const n = document.getElementById('num4');
+  if (s) { s.style.opacity = '1'; s.style.pointerEvents = 'auto'; }
+  if (n) { n.className = 'fd-panel__step-badge'; }
+}
+
+function setWizardDone(step) {
+  const el  = document.getElementById('wiz' + step);
+  const num = document.getElementById('wizNum' + step);
+  if (el) { el.className = el.className.replace('fd-wizard-step--current','fd-wizard-step--completed'); }
+  if (num) num.innerHTML = '<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+}
+
+// Status Pills
+const PILL_ICONS = {
+  ok:      '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>',
+  err:     '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>',
+  loading: '<span class="fd-busy-indicator"></span>',
+  pending: '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>',
+};
+const PILL_CLASS = { ok:'fd-status-item--positive', err:'fd-status-item--negative', loading:'fd-status-item--info', pending:'' };
+
+function setPill(id, st, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'fd-status-item ' + (PILL_CLASS[st] || '');
+  el.innerHTML = (PILL_ICONS[st] || '') + ' ' + text;
+  document.getElementById('setupStatusBar').style.display = '';
+}
+
+function showTokenError(msg) {
+  const box = document.getElementById('tokenError');
+  box.style.display = '';
+  box.innerHTML = `<div class="fd-message-strip fd-message-strip--error" style="margin-top:0.625rem;">${MSG_ICONS.error}${msg}</div>`;
+}
+
+function toggleTechDetails() {
+  const panel   = document.getElementById('techDetails');
+  const chevron = document.getElementById('techChevron');
+  const btn     = document.getElementById('techDetailsBtn');
+  const open    = panel.style.display !== 'none';
+  panel.style.display     = open ? 'none' : '';
+  chevron.style.transform = open ? '' : 'rotate(90deg)';
+  // update button text (last text node)
+  const textNodes = [...btn.childNodes].filter(n => n.nodeType === 3);
+  if (textNodes.length) textNodes[textNodes.length-1].textContent = open ? ' Technische Details einblenden' : ' Technische Details ausblenden';
+}
+
+function toggleDestStep() {
+  const body    = document.getElementById('destStepBody');
+  const chevron = document.getElementById('destChevron');
+  const open    = body.style.display !== 'none';
+  body.style.display      = open ? 'none' : '';
+  chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(270deg)';
+}
+
+// Destination Generator
+function buildTokenUrl() {
+  const tenant  = document.getElementById('d-tenantid').value.trim();
+  const variant = document.getElementById('d-tokenvariant').value;
+  if (!tenant) return '';
+  return `https://${variant === 'microsoft' ? 'login.microsoft.com' : 'login.microsoftonline.com'}/${tenant}/oauth2/v2.0/token`;
+}
+function buildDestUrl() {
+  const domain = document.getElementById('d-spdomain').value.trim().replace(/\/$/, '');
+  const site   = document.getElementById('d-spsite').value.trim().replace(/^\//, '');
+  if (!domain) return '';
+  return `https://${domain}/sites/${site || '<ID_OF_SHAREPOINT_SITE>'}`;
+}
+function buildDestJson() {
+  const name         = document.getElementById('d-name').value.trim();
+  const description  = document.getElementById('d-description').value.trim();
+  const clientId     = document.getElementById('d-clientid').value.trim();
+  const clientSecret = document.getElementById('d-clientsecret').value;
+  const destination  = {
+    "Name":               name             || "<NAME_OF_DESTINATION>",
+    "Type":               "HTTP",
+    "ProxyType":          "Internet",
+    "Authentication":     "OAuth2ClientCredentials",
+    "URL":                buildDestUrl()   || "https://<SHAREPOINT_DOMAIN>/sites/<ID_OF_SHAREPOINT_SITE>",
+    "clientId":           clientId         || "<CLIENT_ID>",
+    "clientSecret":       clientSecret     || "<CLIENT_SECRET>",
+    "tokenServiceURL":    buildTokenUrl()  || "https://login.microsoftonline.com/<TENANT_ID>/oauth2/v2.0/token",
+    "tokenServiceURLType":"Dedicated",
+    "scope":              "https://graph.microsoft.com/.default",
+  };
+  if (description) destination["Description"] = description;
+  return { "exportTime": new Date().toISOString().replace('T',' ').replace('Z','000'), "destination": destination };
+}
+function updateDestPreview() {
+  document.getElementById('d-tokenurl-preview').textContent = buildTokenUrl() || '— Tenant ID eingeben —';
+  document.getElementById('d-url-preview').textContent      = buildDestUrl()  || '— Domain & Site ID eingeben —';
+  const json   = buildDestJson();
+  const masked = { ...json, destination: { ...json.destination } };
+  if (document.getElementById('d-clientsecret').value) masked.destination.clientSecret = '••••••••';
+  document.getElementById('destJsonPreview').textContent = JSON.stringify(masked, null, 2);
+}
+function validateDest() {
+  const missing = ['d-name','d-spdomain','d-spsite','d-tenantid','d-clientid'].filter(id => !document.getElementById(id).value.trim());
+  if (missing.length) {
+    showStatus('destStatus', 'Pflichtfelder fehlen: ' + missing.map(id => {
+      const row = document.getElementById(id).closest('.fd-form-item');
+      return row ? row.querySelector('.fd-form-label').textContent.replace('*','').trim() : id;
+    }).join(', '), 'error');
+    return false;
+  }
+  return true;
+}
+function copyDestJson() {
+  if (!validateDest()) return;
+  navigator.clipboard.writeText(JSON.stringify(buildDestJson(), null, 2)).then(() => {
+    showStatus('destStatus', 'JSON in Zwischenablage kopiert.', 'success');
+    setTimeout(() => showStatus('destStatus', '', ''), 2500);
+  });
+}
+function downloadDestJson() {
+  if (!validateDest()) return;
+  const name = document.getElementById('d-name').value.trim() || 'destination';
+  const blob = new Blob([JSON.stringify(buildDestJson(), null, 2)], { type:'application/json' });
+  const a    = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name + '.json'; a.click();
+  URL.revokeObjectURL(a.href);
+  showStatus('destStatus', `${name}.json heruntergeladen. Client Secret nach dem Import im BTP Cockpit manuell nachtragen.`, 'information');
+}
+
+// Stubs
+function updatePresets() {}
+function setPreset() {}
+function refreshPipelineId() {}
+
+// Init
+updateDestPreview();
+</script>
+</body>
+</html>

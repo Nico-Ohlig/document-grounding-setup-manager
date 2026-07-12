@@ -1,0 +1,23 @@
+_schema-version: "3.1"
+ID: document-grounding-setup-manager
+version: 1.0.0
+description: "Document Grounding Setup Manager – mTLS Bearer Token & Document Grounding Pipeline Operations for SAP BTP"
+
+modules:
+  - name: document-grounding-setup-manager
+    type: staticfile
+    path: .
+    parameters:
+      memory: 256M
+      disk-quota: 512M
+      instances: 1
+      buildpack: python_buildpack
+      command: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+      health-check-type: http
+      health-check-http-endpoint: /
+    build-parameters:
+      builder: custom
+      commands:
+        - python -c "import zipfile,os; z=zipfile.ZipFile('document-grounding-setup-manager.zip','w',zipfile.ZIP_DEFLATED); [z.write(f) for f in ['app.py','requirements.txt','Procfile','manifest.yml','mta.yaml']]; [z.write(os.path.join(r,f)) for r,d,files in os.walk('static') for f in files]; z.close(); print('ZIP created')"
+      build-result: document-grounding-setup-manager.zip
+      supported-platforms: [CF]
